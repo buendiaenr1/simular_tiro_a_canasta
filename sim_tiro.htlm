@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulación de Lanzamiento de Balón</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .controls { margin-bottom: 20px; }
+        .slider-container { display: flex; align-items: center; margin: 10px 0; }
+        label { width: 150px; }
+        input[type="range"] { flex-grow: 1; margin-left: 10px; }
+        #trajectoryCanvas { border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulación de Lanzamiento de Balón de Baloncesto</h1>
+        
+        <div class="controls">
+            <div class="slider-container">
+                <label for="velocity">Velocidad inicial (m/s):</label>
+                <input type="range" id="velocity" min="5" max="15" value="10" step="0.1">
+                <span id="velocityValue">10</span>
+            </div>
+            
+            <div class="slider-container">
+                <label for="angle">Ángulo (grados):</label>
+                <input type="range" id="angle" min="30" max="70" value="45" step="1">
+                <span id="angleValue">45</span>
+            </div>
+        </div>
+
+        <canvas id="trajectoryCanvas" width="700" height="400"></canvas>
+        
+        <div class="results">
+            <p><strong>Alcance máximo:</strong> <span id="maxDistance">0</span> metros</p>
+            <p><strong>Tiempo de vuelo:</strong> <span id="flightTime">0</span> segundos</p>
+        </div>
+    </div>
+
+    <script>
+        // Elementos DOM
+        const velocitySlider = document.getElementById('velocity');
+        const angleSlider = document.getElementById('angle');
+        const velocityValue = document.getElementById('velocityValue');
+        const angleValue = document.getElementById('angleValue');
+        const maxDistanceSpan = document.getElementById('maxDistance');
+        const flightTimeSpan = document.getElementById('flightTime');
+        const canvas = document.getElementById('trajectoryCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Constantes físicas
+        const g = 9.81;
+
+        // Actualizar valores y recalcular
+        function updateSimulation() {
+            const v0 = parseFloat(velocitySlider.value);
+            const alpha = parseFloat(angleSlider.value) * Math.PI / 180;
+            
+            // Actualizar displays
+            velocityValue.textContent = v0.toFixed(1);
+            angleValue.textContent = angleSlider.value;
+            
+            // Calcular parámetros
+            const tFlight = (2 * v0 * Math.sin(alpha)) / g;
+            const maxDistance = v0 * Math.cos(alpha) * tFlight;
+            
+            // Actualizar resultados
+            maxDistanceSpan.textContent = maxDistance.toFixed(1);
+            flightTimeSpan.textContent = tFlight.toFixed(2);
+            
+            // Dibujar trayectoria
+            drawTrajectory(v0, alpha, tFlight);
+        }
+
+        // Dibujar trayectoria en canvas
+        function drawTrajectory(v0, alpha, tFlight) {
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Escala y offset para visualización
+            const scaleX = canvas.width / (2 * maxDistanceSpan.textContent);
+            const scaleY = canvas.height / 10;
+            const offsetX = 50;
+            const offsetY = canvas.height - 50;
+            
+            // Dibujar ejes
+            ctx.strokeStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(offsetX, offsetY);
+            ctx.lineTo(canvas.width - 20, offsetY); // Eje X
+            ctx.moveTo(offsetX, 20);
+            ctx.lineTo(offsetX, offsetY); // Eje Y
+            ctx.stroke();
+            
+            // Dibujar trayectoria
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let t = 0; t <= tFlight; t += tFlight / 100) {
+                const x = v0 * Math.cos(alpha) * t;
+                const y = v0 * Math.sin(alpha) * t - 0.5 * g * t * t;
+                
+                const canvasX = offsetX + x * scaleX;
+                const canvasY = offsetY - y * scaleY;
+                
+                if (t === 0) {
+                    ctx.moveTo(canvasX, canvasY);
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+            
+            // Marcar punto de aterrizaje
+            const landingX = offsetX + maxDistanceSpan.textContent * scaleX;
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(landingX, offsetY, 5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // Event listeners
+        velocitySlider.addEventListener('input', updateSimulation);
+        angleSlider.addEventListener('input', updateSimulation);
+
+        // Inicializar simulación
+        updateSimulation();
+    </script>
+</body>
+</html>
